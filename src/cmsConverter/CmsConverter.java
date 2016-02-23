@@ -86,7 +86,7 @@ public class CmsConverter {
 							BufferedReader bufferedReader = new BufferedReader(fileReader);
 							String cmsId;
 							while ((cmsId = bufferedReader.readLine()) != null) {
-								log.info("Start to synchronization UUID number: "+cmsId);
+								log.info("Start to synchronization CMS-record: "+cmsId);
 								String  url=BaseUrl+"?version=1.1&operation=searchRetrieve&query=rec.id="+cmsId+"&maximumRecords=1&recordSchema=dc";
 								URL connection = new URL(url);
 								BufferedReader in = new BufferedReader(new InputStreamReader(connection.openStream())); 
@@ -111,12 +111,12 @@ public class CmsConverter {
 										}
 									}
 						        }catch(Exception e){
-						        	log.error("coudn't read UUID: "+cmsId+" from the cms server");
+						        	log.error("coudn't read CMS record "+cmsId+" from the cms server");
 						        	log.error(e.getMessage());
 						        	file_error_flag="error";
 						        	error_flag="error";
 								}
-						    log.info("finished to synchronization UUID number: "+cmsId);   
+						    log.info("finished to synchronization CMS record: "+cmsId);   
 						    urlContent="";
 							}
 							addOAInameSpace();
@@ -222,7 +222,7 @@ public class CmsConverter {
 			dcDoc = DcDocument.Factory.parse(xml);
 			SrwDcType srwdc = dcDoc.getDc();
 		} catch (XmlException e1) {
-			log.error("coudn't parse UUID: "+cmsId+" to dc format");
+			log.error("coudn't parse CMS-record: "+cmsId+" to dc format");
 			log.error(e1.getMessage());
 			throw new IEWSException(e1);
 		}
