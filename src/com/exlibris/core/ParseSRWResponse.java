@@ -10,17 +10,17 @@ import gov.loc.zing.srw.diagnostic.DiagnosticType;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+
 import org.purl.dc.elements.x11.ElementType;
 
+import cmsConverter.Logger;
 import srw.schema.x1.dcSchema.DcDocument;
 import srw.schema.x1.dcSchema.SrwDcType;
 
 public class ParseSRWResponse {
 
-	static Log log = LogFactory.getLog(ParseSRWResponse.class);
-
+	static Logger log= new Logger();
+	
 	private List<SRWRecord> resultsObjects = new ArrayList<SRWRecord>();
 	int numberOfRecords = 0;
 	int recordsRetrived = 0;

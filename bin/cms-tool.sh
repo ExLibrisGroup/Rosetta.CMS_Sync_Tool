@@ -3,10 +3,10 @@
 
 NOW=$(date +"%m-%d-%Y-%r")
 project_dir=`pwd`
-log_file="${project_dir}/server.log${NOW}"
+log_file="${project_dir}/logs/server.log${NOW}"
 echo "log file: ${log_file}"
 conf_dir="/exlibris/dps/d4_1/system.dir/conf/global.properties"
-pw=`get_ora_passwd ${ORA_USER_PREFIX}SHR00`
+pw=`get_ora_passwd ${ORA_USER_PREFIX}ROS00`
 LCP=${LCP}:$project_dir/lib/commons-io-2.1.jar
 LCP=${LCP}:$project_dir/lib/commons-lang-2.6.jar
 LCP=${LCP}:$project_dir/lib/commons-logging-1.1.1.jar

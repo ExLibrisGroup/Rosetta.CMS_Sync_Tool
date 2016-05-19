@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.xmlbeans.XmlException;
 import org.dom4j.Document;
@@ -30,10 +32,12 @@ import srw.schema.x1.dcSchema.SrwDcType;
 
 import com.exlibris.core.ParseSRWResponse;
 import com.exlibris.core.SRWRecord;
+import com.exlibris.core.ERESearchResultsSet;
 import com.exlibris.core.sdk.exceptions.IEWSException;
 import com.exlibris.core.sdk.formatting.DublinCore;
 import com.exlibris.core.sdk.formatting.DublinCoreFactory;
 import com.exlibris.digitool.exceptions.RepositoryException;
+import com.exlibris.repository.eme.EMEResultSet;
 
 import dps.utils.JDBCConnection;
 
@@ -43,11 +47,14 @@ public class CmsConverter {
 	private static String getcontantById = "SELECT FILE_CONTENT FROM FILE_TABLE WHERE FILE_KEY='com.exlibris.dps.infra.externalresourceexplorer'";
 	private static String getJobDetails = "SELECT FILE_CONTENT FROM FILE_TABLE WHERE FILE_KEY='com.exlibris.dps.repository.metadataloadjob'";
 	private static String dublincore_configuration = "SELECT FILE_CONTENT FROM FILE_TABLE WHERE FILE_KEY='com.exlibris.dps.webeditor.configuration.dc'";
+	private static String is_cms_record_used;
 	private static PreparedStatement getKeyIdPS;
 	private static PreparedStatement mdJobConfig;
 	private static PreparedStatement dcConfiguration;
+	private static PreparedStatement cmsRecordCount;
 	private static JDBCConnection conn;
 	private static String repositoryName;
+	private static String filePrefix;
 	private static String error_flag="none";
 	private static String file_error_flag="none";
 	private static String PROCESSED="processed";
@@ -59,35 +66,62 @@ public class CmsConverter {
 				log.info("Starting to synchronization between CMS Server to Rosetta");
 				
 				try{
-					conn = new JDBCConnection(args[0], "shr",args[2],true);
+					conn = new JDBCConnection(args[0], "ros",args[2],true);
 				}catch(Exception e){
 					log.error("failed to build the connection. ");
 					log.error(e.getMessage());
 					System.exit(2);
 				}
-				getKeyIdPS = conn.getConnection("shr").prepareStatement(getcontantById);
-				mdJobConfig =  conn.getConnection("shr").prepareStatement(getJobDetails);
+				getKeyIdPS = conn.getConnection("ros").prepareStatement(getcontantById);
+				mdJobConfig =  conn.getConnection("ros").prepareStatement(getJobDetails);
 				String xmlContent=getKeyId(getKeyIdPS);
 				String xmlJobContent=getKeyId(mdJobConfig);
 				String urlContent="";
-				String BaseUrl=org.apache.commons.lang.StringUtils.substringBetween(xmlContent,"<parm name=\"baseUrl\">","</parm>");
+				String BaseUrl="";
+				String recordSchema="";
+				String operation="";
 				String mddir=org.apache.commons.lang.StringUtils.substringBetween(xmlJobContent,"<adapter_param key=\"mddir\" value=\"","\">");
-				repositoryName =org.apache.commons.lang.StringUtils.substringBetween(xmlContent,"<RepositoryName name=\"","\" >");
+				filePrefix = org.apache.commons.lang.StringUtils.substringBetween(xmlJobContent,"<adapter_param key=\"filenameprefix\" value=\"","\">");
+				repositoryName ="";
 				log.info("mddir:   "+mddir);
 				final File folder = new File(args[1]);
+				if(!folder.exists()){
+					log.error("No such file or directory"+args[1]);
+					System.exit(2);
+				}
 				for (final File fileEntry : folder.listFiles()){
 						if(fileEntry.isDirectory())
 							continue;
 						log.info("Starting to read file: "+fileEntry.getName());
 						File file = null;
 						try{
-							 file = new File(args[1]+"/"+fileEntry.getName());	
+							file = new File(args[1]+"/"+fileEntry.getName());	
 							FileReader fileReader = new FileReader(file);
 							BufferedReader bufferedReader = new BufferedReader(fileReader);
 							String cmsId;
 							while ((cmsId = bufferedReader.readLine()) != null) {
 								log.info("Start to synchronization CMS-record: "+cmsId);
-								String  url=BaseUrl+"?version=1.1&operation=searchRetrieve&query=rec.id="+cmsId+"&maximumRecords=1&recordSchema=dc";
+
+								Pattern p = Pattern.compile("(<RepositoryName" + ".*?" + "</RepositoryName>)",Pattern.DOTALL);
+								Matcher m = p.matcher(xmlContent);
+								while (m.find()) {
+									String externalResource  = m.group(1);
+									repositoryName =org.apache.commons.lang.StringUtils.substringBetween(externalResource,"<RepositoryName name=\"","\"");
+									is_cms_record_used = "SELECT count(*) FROM HDEMETADATA WHERE EXTERNAL_SYSTEM = '"+repositoryName+"' AND EXTERNAL_SYSTEM_ID = '"+cmsId+"'";
+									cmsRecordCount =  conn.getConnection("ros").prepareStatement(is_cms_record_used);
+									if(Integer.parseInt(getKeyId(cmsRecordCount))==1){							
+										BaseUrl=org.apache.commons.lang.StringUtils.substringBetween(externalResource,"<parm name=\"baseUrl\">","</parm>");
+										recordSchema=org.apache.commons.lang.StringUtils.substringBetween(externalResource,"<parm name=\"recordSchema\">","</parm>");
+										operation=org.apache.commons.lang.StringUtils.substringBetween(externalResource,"<parm name=\"operation\">","</parm>");
+										
+										break;
+									}
+								}
+								if(BaseUrl.isEmpty()){
+									log.info("Cms record id: "+cmsId+ "  doesn’t exist in the DPS");
+									continue;
+								}
+								String  url=BaseUrl+"?version=1.1&operation="+operation+"&query=rec.id="+cmsId+"&maximumRecords=1&recordSchema="+recordSchema;
 								URL connection = new URL(url);
 								BufferedReader in = new BufferedReader(new InputStreamReader(connection.openStream())); 
 								String inputLine;
@@ -100,16 +134,19 @@ public class CmsConverter {
 						        	if(urlContent.isEmpty()){
 						        		throw new Exception();
 						        	}
-						        	ParseSRWResponse srwParser = new ParseSRWResponse(urlContent);
-						        	List<SRWRecord> resultsObjects=srwParser.getResultsObjects();
-						        	String record;		
-									if (resultsObjects != null && resultsObjects.size() > 0){
-										for ( int set = 0; set < resultsObjects.size(); set++){
-											SRWRecord srwRecord = resultsObjects.get(set);
-											record=converdSRWdctoDPSdc(srwRecord.getData() ,cmsId);
-											ListRecords+=AddRecordHeader(record ,repositoryName , cmsId);
+						    		ERESearchResultsSet searchResults =  new ERESearchResultsSet(urlContent);
+						    		if(searchResults != null){
+							        	ParseSRWResponse srwParser = new ParseSRWResponse(urlContent);
+							        	List<SRWRecord> resultsObjects=searchResults.getResultsObjects();
+							        	String record;		
+										if (resultsObjects != null && resultsObjects.size() > 0){
+											for ( int set = 0; set < resultsObjects.size(); set++){
+												SRWRecord srwRecord = resultsObjects.get(set);
+												record=converdSRWdctoDPSdc(srwRecord.getData() ,cmsId);
+												ListRecords+=AddRecordHeader(record ,repositoryName , cmsId);
+											}
 										}
-									}
+						    		}
 						        }catch(Exception e){
 						        	log.error("coudn't read CMS record "+cmsId+" from the cms server");
 						        	log.error(e.getMessage());
@@ -156,19 +193,20 @@ public class CmsConverter {
 	
 	private static boolean createJobFile(String dir ,String cmsId) throws FileNotFoundException, UnsupportedEncodingException {
 		if (dir == null || ! isValidateDirectory(dir)) {
-			log.error("directory name: "+dir+ "is null or invalid");
+			log.error("directory name: "+dir+ " is null or invalid");
 			error_flag="error";
 			return false;
 		}
 		if(ListRecords.isEmpty())
 			return false;
-		log.info("creating  file: "+repositoryName+".oai."+ getTime(null)+".xml");
+		String timeStamp = getTime(null);
+		log.info("creating  file: "+filePrefix+".oai."+ timeStamp+".xml");
 		try{
-			PrintWriter writer = new PrintWriter(dir+"/"+repositoryName+".oai."+ getTime(null)+".xml", "UTF-8");	
+			PrintWriter writer = new PrintWriter(dir+"/"+filePrefix+".oai."+ timeStamp+".xml", "UTF-8");	
 			writer.println(ListRecords);
 			writer.close();
 		}catch(Exception e){
-			log.error("An error occurred while creating file: "+repositoryName+".oai."+getTime(null)+".xml");
+			log.error("An error occurred while creating file: "+filePrefix+".oai."+ timeStamp +".xml");
 			error_flag="error";
 			return false;
 		}
@@ -200,7 +238,7 @@ public class CmsConverter {
 		ResultSet res = preparedStatement.executeQuery();
 
 		if (res.next()) {
-			ret = res.getClob(1).getSubString(1L,(int)res.getClob(1).length());
+			ret = res.getString(1);
 		}
 
 		res.close();
@@ -231,6 +269,14 @@ public class CmsConverter {
 		try {
 			String oldNamespace=org.apache.commons.lang.StringUtils.substringBetween(xml,"<" ,">");
 			String oldPrefixNamespace =org.apache.commons.lang.StringUtils.substringBetween(xml,"<" ," ");
+			if(oldNamespace.contains("xsi:schemaLocation")){
+				Pattern p = Pattern.compile("(xsi:schemaLocation=\"" + ".*?" + "\" )",Pattern.DOTALL);
+				Matcher m = p.matcher(oldNamespace);
+				if(m.find()) {
+					String schemaLocation  = m.group(1);
+					xml=xml.replaceFirst(schemaLocation, " ");
+				}
+			}
 			//defaultNameSpace =org.apache.commons.lang.StringUtils.substringBetween(xml,"xmlns=\"","\"");
 			if(oldNamespace.contains("xmlns:dc")){
 				xml=xml.replaceFirst(oldPrefixNamespace, dcRecordClose  + OAIschemaLocation);
@@ -284,7 +330,7 @@ private static String parseXml(String xml ,DublinCore dc)throws RepositoryExcept
 
 	}
 	private static boolean validateElement(org.dom4j.Element element) throws SQLException {
-		dcConfiguration =  conn.getConnection("shr").prepareStatement(dublincore_configuration);
+		dcConfiguration =  conn.getConnection("ros").prepareStatement(dublincore_configuration);
 		String xmlDcContent=getKeyId(dcConfiguration);
 		String elem=createDcNode(element);
 		if(elem==null){
