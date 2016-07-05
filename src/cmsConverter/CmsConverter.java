@@ -118,7 +118,7 @@ public class CmsConverter {
 									}
 								}
 								if(BaseUrl.isEmpty()){
-									log.info("Cms record id: "+cmsId+ "  doesn’t exist in the DPS");
+									log.info("Cms record id: "+cmsId+ "  doesn't exist in the DPS");
 									continue;
 								}
 								String  url=BaseUrl+"?version=1.1&operation="+operation+"&query=rec.id="+cmsId+"&maximumRecords=1&recordSchema="+recordSchema;
@@ -155,6 +155,7 @@ public class CmsConverter {
 								}
 						    log.info("finished to synchronization CMS record: "+cmsId);   
 						    urlContent="";
+						    BaseUrl="";
 							}
 							addOAInameSpace();
 							if(!createJobFile(mddir ,cmsId)){
@@ -255,7 +256,7 @@ public class CmsConverter {
 		Namespace oai_dc= new Namespace("oai_dc", "http://www.openarchives.org/OAI/2.0/oai_dc/");
 		//String defaultNameSpace = "";
 		DcDocument dcDoc;
-		log.info("Starting to parse cmsId: "+cmsId+"to dc format");
+		log.info("Starting to parse cmsId: "+cmsId+" to dc format");
 		try {
 			dcDoc = DcDocument.Factory.parse(xml);
 			SrwDcType srwdc = dcDoc.getDc();
