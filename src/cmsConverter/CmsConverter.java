@@ -130,7 +130,7 @@ public class CmsConverter {
 						        in.close();				
 						        try{
 						        //	urlContent=str;
-						        	log.info("cms content: \n"+urlContent);
+						        	log.info("Cms content: \n"+urlContent);
 						        	if(urlContent.isEmpty()){
 						        		throw new Exception();
 						        	}
@@ -148,18 +148,18 @@ public class CmsConverter {
 										}
 						    		}
 						        }catch(Exception e){
-						        	log.error("coudn't read CMS record "+cmsId+" from the cms server");
+						        	log.error("Coudn't read CMS record "+cmsId+" from the cms server");
 						        	log.error(e.getMessage());
 						        	file_error_flag="error";
 						        	error_flag="error";
 								}
-						    log.info("finished to synchronization CMS record: "+cmsId);   
+						    log.info("Finished to synchronization CMS record: "+cmsId);   
 						    urlContent="";
 						    BaseUrl="";
 							}
 							addOAInameSpace();
 							if(!createJobFile(mddir ,cmsId)){
-								log.error("failed to create the file");
+								log.error("Failed to create the file");
 							}
 							fileReader.close();
 							
@@ -169,11 +169,11 @@ public class CmsConverter {
 						file_error_flag="error";
 					}
 					if(file_error_flag.equals("error")){
-						log.info("finished to read file: "+fileEntry.getName()+" with errors.");
+						log.info("Finished to read file: "+fileEntry.getName()+" with errors.");
 					}else if(file_error_flag.equals("warn")){
-						log.info("finished to read file: "+fileEntry.getName()+" with warnings.");
+						log.info("Finished to read file: "+fileEntry.getName()+" with warnings.");
 					}else{
-						log.info("finished to read file: "+fileEntry.getName());
+						log.info("Finished to read file: "+fileEntry.getName());
 					}
 					moveFileToDir(file , PROCESSED);	
 					ListRecords="";
@@ -194,14 +194,14 @@ public class CmsConverter {
 	
 	private static boolean createJobFile(String dir ,String cmsId) throws FileNotFoundException, UnsupportedEncodingException {
 		if (dir == null || ! isValidateDirectory(dir)) {
-			log.error("directory name: "+dir+ " is null or invalid");
+			log.error("Directory name: '"+dir+ "' is null or invalid");
 			error_flag="error";
 			return false;
 		}
 		if(ListRecords.isEmpty())
 			return false;
 		String timeStamp = getTime(null);
-		log.info("creating  file: "+filePrefix+".oai."+ timeStamp+".xml");
+		log.info("Creating  file: "+filePrefix+".oai."+ timeStamp+".xml");
 		try{
 			PrintWriter writer = new PrintWriter(dir+"/"+filePrefix+".oai."+ timeStamp+".xml", "UTF-8");	
 			writer.println(ListRecords);
@@ -222,9 +222,23 @@ public class CmsConverter {
 		ListRecords=OAINameSpace+"<ListRecords>"+ListRecords+"</ListRecords>"+OAICloseTag;
 	
 	}
-	private static String AddRecordHeader(String record ,String repositoryName ,String cmsId ) {
+	private static String AddRecordHeader(String record ,String repositoryName ,String cmsId ) throws Exception {
 		record="<metadata>"+record+"</metadata>";
-		String identifier=org.apache.commons.lang.StringUtils.substringBetween(record,"<dc:identifier>","</dc:identifier>");
+		
+		String identifier=null;
+		boolean validIdentitier = false;
+		Pattern p = Pattern.compile("<dc:identifier>(.*?)</dc:identifier>");
+		Matcher m = p.matcher(record);
+		while (m.find()) {
+			identifier  = m.group(1);
+			if(identifier.contains(cmsId)){
+				validIdentitier = true;
+				break;
+			}
+		}
+		if(!validIdentitier){
+			throw new Exception("Invalid cms identifier value for "+cmsId+ " record");
+		}
 		identifier="<identifier>"+identifier+"</identifier>";
 		String header ="<header>"+identifier+"</header>";
 		String complateRecord="<record>"+header+record+"</record>";
@@ -261,7 +275,7 @@ public class CmsConverter {
 			dcDoc = DcDocument.Factory.parse(xml);
 			SrwDcType srwdc = dcDoc.getDc();
 		} catch (XmlException e1) {
-			log.error("coudn't parse CMS-record: "+cmsId+" to dc format");
+			log.error("Coudn't parse CMS-record: "+cmsId+" to dc format");
 			log.error(e1.getMessage());
 			throw new IEWSException(e1);
 		}
@@ -303,7 +317,7 @@ public class CmsConverter {
 			throw new IEWSException(e);
 
 		}
-		log.info("finished to parse cmsId: "+cmsId+"to dc format");
+		log.info("Finished to parse cmsId: "+cmsId+"to dc format");
 		return xml;
 	}
 private static String parseXml(String xml ,DublinCore dc)throws RepositoryException ,IEWSException, IOException, SQLException{
@@ -312,7 +326,7 @@ private static String parseXml(String xml ,DublinCore dc)throws RepositoryExcept
 		try {
 			dcTemp = DublinCoreFactory.getInstance().createDocument(xml);
 		} catch (DocumentException e) {
-			log.error("cannot parse cms xml");
+			log.error("Cannot parse cms xml");
 			throw new IEWSException("cannot parse cms xml");
 		}
 		//String defaultNameSpace=org.apache.commons.lang.StringUtils.substringBetween(xml," xmlns=\"","\"");
