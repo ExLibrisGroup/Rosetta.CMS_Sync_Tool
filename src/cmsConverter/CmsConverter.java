@@ -80,8 +80,8 @@ public class CmsConverter {
 				String BaseUrl="";
 				String recordSchema="";
 				String operation="";
-				String mddir=org.apache.commons.lang.StringUtils.substringBetween(xmlJobContent,"<adapter_param key=\"mddir\" value=\"","\">");
-				filePrefix = org.apache.commons.lang.StringUtils.substringBetween(xmlJobContent,"<adapter_param key=\"filenameprefix\" value=\"","\">");
+				String mddir=org.apache.commons.lang.StringUtils.substringBetween(xmlJobContent,"<adapter_param key=\"mddir\" value=\"","\"");
+				filePrefix = org.apache.commons.lang.StringUtils.substringBetween(xmlJobContent,"<adapter_param key=\"filenameprefix\" value=\"","\"");
 				repositoryName ="";
 				log.info("mddir:   "+mddir);
 				final File folder = new File(args[1]);
