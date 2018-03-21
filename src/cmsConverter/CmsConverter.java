@@ -80,6 +80,7 @@ public class CmsConverter {
 				String BaseUrl="";
 				String recordSchema="";
 				String operation="";
+				String indexName="";
 				String mddir=org.apache.commons.lang.StringUtils.substringBetween(xmlJobContent,"<adapter_param key=\"mddir\" value=\"","\"");
 				filePrefix = org.apache.commons.lang.StringUtils.substringBetween(xmlJobContent,"<adapter_param key=\"filenameprefix\" value=\"","\"");
 				repositoryName ="";
@@ -113,6 +114,7 @@ public class CmsConverter {
 										BaseUrl=org.apache.commons.lang.StringUtils.substringBetween(externalResource,"<parm name=\"baseUrl\">","</parm>");
 										recordSchema=org.apache.commons.lang.StringUtils.substringBetween(externalResource,"<parm name=\"recordSchema\">","</parm>");
 										operation=org.apache.commons.lang.StringUtils.substringBetween(externalResource,"<parm name=\"operation\">","</parm>");
+										indexName=org.apache.commons.lang.StringUtils.substringBetween(externalResource,"<parm name=\"indexName\">","</parm>");
 										
 										break;
 									}
@@ -121,7 +123,7 @@ public class CmsConverter {
 									log.info("Cms record id: "+cmsId+ "  doesn't exist in the DPS");
 									continue;
 								}
-								String  url=BaseUrl+"?version=1.1&operation="+operation+"&query=rec.id="+cmsId+"&maximumRecords=1&recordSchema="+recordSchema;
+								String  url=(BaseUrl+"?version=1.1&operation="+operation+"&query=" + indexName + cmsId + "&maximumRecords=1&recordSchema=" + recordSchema).replace("&amp;", "&");
 								URL connection = new URL(url);
 								BufferedReader in = new BufferedReader(new InputStreamReader(connection.openStream())); 
 								String inputLine;
