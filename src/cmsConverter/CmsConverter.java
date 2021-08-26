@@ -59,12 +59,12 @@ public class CmsConverter {
 	private static String file_error_flag="none";
 	private static String PROCESSED="processed";
 	static Logger log= new Logger();
-	
+
 	private static String ListRecords="";
 	public static void main(String[] args) {
 			try {
 				log.info("Starting to synchronization between CMS Server to Rosetta");
-				
+
 				try{
 					conn = new JDBCConnection(args[0], "ros",args[2],true);
 				}catch(Exception e){
@@ -96,7 +96,7 @@ public class CmsConverter {
 						log.info("Starting to read file: "+fileEntry.getName());
 						File file = null;
 						try{
-							file = new File(args[1]+"/"+fileEntry.getName());	
+							file = new File(args[1]+"/"+fileEntry.getName());
 							FileReader fileReader = new FileReader(file);
 							BufferedReader bufferedReader = new BufferedReader(fileReader);
 							String cmsId;
@@ -110,12 +110,12 @@ public class CmsConverter {
 									repositoryName =org.apache.commons.lang.StringUtils.substringBetween(externalResource,"<RepositoryName name=\"","\"");
 									is_cms_record_used = "SELECT count(*) FROM HDEMETADATA WHERE EXTERNAL_SYSTEM = '"+repositoryName+"' AND EXTERNAL_SYSTEM_ID = '"+cmsId+"'";
 									cmsRecordCount =  conn.getConnection("ros").prepareStatement(is_cms_record_used);
-									if(Integer.parseInt(getKeyId(cmsRecordCount))==1){							
+									if(Integer.parseInt(getKeyId(cmsRecordCount))==1){
 										BaseUrl=org.apache.commons.lang.StringUtils.substringBetween(externalResource,"<parm name=\"baseUrl\">","</parm>");
 										recordSchema=org.apache.commons.lang.StringUtils.substringBetween(externalResource,"<parm name=\"recordSchema\">","</parm>");
 										operation=org.apache.commons.lang.StringUtils.substringBetween(externalResource,"<parm name=\"operation\">","</parm>");
 										indexName=org.apache.commons.lang.StringUtils.substringBetween(externalResource,"<parm name=\"indexName\">","</parm>");
-										
+
 										break;
 									}
 								}
@@ -125,11 +125,11 @@ public class CmsConverter {
 								}
 								String  url=(BaseUrl+"?version=1.1&operation="+operation+"&query=" + indexName + cmsId + "&maximumRecords=1&recordSchema=" + recordSchema).replace("&amp;", "&");
 								URL connection = new URL(url);
-								BufferedReader in = new BufferedReader(new InputStreamReader(connection.openStream())); 
+								BufferedReader in = new BufferedReader(new InputStreamReader(connection.openStream()));
 								String inputLine;
 						        while ((inputLine = in.readLine()) != null)
 						        	urlContent+=inputLine;
-						        in.close();				
+						        in.close();
 						        try{
 						        //	urlContent=str;
 						        	log.info("Cms content: \n"+urlContent);
@@ -140,7 +140,7 @@ public class CmsConverter {
 						    		if(searchResults != null){
 							        	ParseSRWResponse srwParser = new ParseSRWResponse(urlContent);
 							        	List<SRWRecord> resultsObjects=searchResults.getResultsObjects();
-							        	String record;		
+							        	String record;
 										if (resultsObjects != null && resultsObjects.size() > 0){
 											for ( int set = 0; set < resultsObjects.size(); set++){
 												SRWRecord srwRecord = resultsObjects.get(set);
@@ -155,7 +155,7 @@ public class CmsConverter {
 						        	file_error_flag="error";
 						        	error_flag="error";
 								}
-						    log.info("Finished to synchronization CMS record: "+cmsId);   
+						    log.info("Finished to synchronization CMS record: "+cmsId);
 						    urlContent="";
 						    BaseUrl="";
 							}
@@ -164,7 +164,7 @@ public class CmsConverter {
 								log.error("Failed to create the file");
 							}
 							fileReader.close();
-							
+
 					}catch(Exception e){
 						log.error(e.getMessage());
 						error_flag="error";
@@ -177,15 +177,22 @@ public class CmsConverter {
 					}else{
 						log.info("Finished to read file: "+fileEntry.getName());
 					}
-					moveFileToDir(file , PROCESSED);	
+					moveFileToDir(file , PROCESSED);
 					ListRecords="";
 					file_error_flag="none";
 				}
 			} catch (Exception e) {
 					log.error(e.getMessage());
 					System.exit(2);
+			} finally {
+				try {
+					conn.close();
+				} catch (Exception ex) {
+					log.error("Failed to close connection", ex);
+				}
+
 			}
-			
+
 		if(error_flag.equals("error")){
 			System.exit(2);
 		}else if(error_flag.equals("warn")){
@@ -193,7 +200,7 @@ public class CmsConverter {
 		}
 
 	}
-	
+
 	private static boolean createJobFile(String dir ,String cmsId) throws FileNotFoundException, UnsupportedEncodingException {
 		if (dir == null || ! isValidateDirectory(dir)) {
 			log.error("Directory name: '"+dir+ "' is null or invalid");
@@ -205,7 +212,7 @@ public class CmsConverter {
 		String timeStamp = getTime(null);
 		log.info("Creating  file: "+filePrefix+".oai."+ timeStamp+".xml");
 		try{
-			PrintWriter writer = new PrintWriter(dir+"/"+filePrefix+".oai."+ timeStamp+".xml", "UTF-8");	
+			PrintWriter writer = new PrintWriter(dir+"/"+filePrefix+".oai."+ timeStamp+".xml", "UTF-8");
 			writer.println(ListRecords);
 			writer.close();
 		}catch(Exception e){
@@ -214,7 +221,7 @@ public class CmsConverter {
 			return false;
 		}
 		return true;
-		
+
 	}
 	private static void addOAInameSpace() {
 		if(ListRecords.isEmpty())
@@ -222,11 +229,11 @@ public class CmsConverter {
 		String OAINameSpace="<OAI-PMH xmlns=\"http://www.openarchives.org/OAI/2.0/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd\">";
 		String OAICloseTag="</OAI-PMH>";
 		ListRecords=OAINameSpace+"<ListRecords>"+ListRecords+"</ListRecords>"+OAICloseTag;
-	
+
 	}
 	private static String AddRecordHeader(String record ,String repositoryName ,String cmsId ) throws Exception {
 		record="<metadata>"+record+"</metadata>";
-		
+
 		String identifier=null;
 		boolean validIdentitier = false;
 		Pattern p = Pattern.compile("<dc:identifier>(.*?)</dc:identifier>");
@@ -245,8 +252,8 @@ public class CmsConverter {
 		String header ="<header>"+identifier+"</header>";
 		String complateRecord="<record>"+header+record+"</record>";
 		return complateRecord;
-		
-		
+
+
 	}
 	public static String getKeyId(PreparedStatement preparedStatement) throws SQLException {
 
@@ -259,9 +266,10 @@ public class CmsConverter {
 		}
 
 		res.close();
+		preparedStatement.close();
 		return ret;
 	}
-	
+
 	private static String converdSRWdctoDPSdc(String xml, String cmsId)throws Exception  {
 
 		//final String dcNamespace="xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:marcrel=\"http://www.loc.gov/loc.terms/relators/\" xmlns:dcterms=\"http://purl.org/dc/terms/\" xmlns:mods=\"http://www.loc.gov/mods/v3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"";
@@ -281,7 +289,7 @@ public class CmsConverter {
 			log.error(e1.getMessage());
 			throw new IEWSException(e1);
 		}
-		
+
 		// parse
 		try {
 			String oldNamespace=org.apache.commons.lang.StringUtils.substringBetween(xml,"<" ,">");
@@ -300,7 +308,7 @@ public class CmsConverter {
 			}else{
 				xml=xml.replaceFirst(oldPrefixNamespace, dcRecordClose  + OAIschemaLocation+" xmlns:dc=\"http://purl.org/dc/elements/1.1/\"");
 			}
-			
+
 			String oldClose=xml.substring(org.apache.commons.lang.StringUtils.lastIndexOf(xml, "<")+2, org.apache.commons.lang.StringUtils.lastIndexOf(xml, ">"));
 			xml= xml.replaceAll(oldClose, dcRecordClose);
 			//create empty DublinCore document
@@ -311,8 +319,8 @@ public class CmsConverter {
 			} catch (IOException e) {
 				throw new Exception(e);
 			}
-			xml=xml.replaceAll(dcRecordClose, OAIprefix);			
-			
+			xml=xml.replaceAll(dcRecordClose, OAIprefix);
+
 		//	validateXml(dc,record);
 
 		}catch (IEWSException e){
@@ -323,7 +331,7 @@ public class CmsConverter {
 		return xml;
 	}
 private static String parseXml(String xml ,DublinCore dc)throws RepositoryException ,IEWSException, IOException, SQLException{
-		
+
 		DublinCore dcTemp =null;
 		try {
 			dcTemp = DublinCoreFactory.getInstance().createDocument(xml);
@@ -340,7 +348,7 @@ private static String parseXml(String xml ,DublinCore dc)throws RepositoryExcept
         	if(validateElement(element)){
         		setDcData(element, dc);
         	}
-        	
+
         }
     	xml=dc.toXml().substring(dc.toXml().indexOf(">")+1,dc.toXml().length());
     	return xml;
@@ -448,7 +456,7 @@ private static String parseXml(String xml ,DublinCore dc)throws RepositoryExcept
 	    	log.info("File is failed to move to processed folder!");
 	    }
 	}
-	
+
 	private final static String getTime(String format)  {
 
     	if (format == null)
