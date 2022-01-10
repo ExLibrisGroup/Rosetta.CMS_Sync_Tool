@@ -12,7 +12,6 @@ LCP=${LCP}:$project_dir/lib/commons-lang-2.6.jar
 LCP=${LCP}:$project_dir/lib/commons-logging-1.1.1.jar
 LCP=${LCP}:$project_dir/lib/dom4j-1.6.1.jar
 LCP=${LCP}:$project_dir/lib/dps-sdk-4.2.1.jar
-LCP=${LCP}:$project_dir/lib/log4j-1.2.14.jar
 LCP=${LCP}:$project_dir/lib/oracle12c-1.0.2.0.jar
 LCP=${LCP}:$project_dir/lib/xmlbeans-2.6.0.jar
 LCP=${LCP}:$project_dir/lib/commons-lang3.jar

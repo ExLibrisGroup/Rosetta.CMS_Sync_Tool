@@ -2,32 +2,32 @@
 <project name="cms-converter-tool" default="deploy_local" basedir=".">
 
 	<property file="build.properties" />
-	
+
 	<path id="classpath">
-		<fileset dir="${lib.dir}" includes="commons-io-2.1.jar, commons-lang-2.6.jar,commons-lang3.jar, commons-logging-1.1.1.jar,dom4j-1.6.1.jar ,dps-sdk-4.2.1.jar,log4j-1.2.14.jar ,oracle12c-1.0.2.0.jar ,xmlbeans-2.6.0.jar" />
+		<fileset dir="${lib.dir}" includes="commons-io-2.1.jar, commons-lang-2.6.jar,commons-lang3.jar, commons-logging-1.1.1.jar,dom4j-1.6.1.jar ,dps-sdk-4.2.1.jar ,oracle12c-1.0.2.0.jar ,xmlbeans-2.6.0.jar" />
 	</path>
-	
+
 	<target name="clean">
 		<echo>Cleaning the ${build.dir}</echo>
 		<delete dir="${build.dir}" />
 		<delete dir="${dist.dir}" />
 	</target>
-				
+
 	<target name="init" depends="clean">
 		<echo>Creating the build directory</echo>
 		<mkdir dir="${build.dir}/WEB-INF/classes" />
 		<mkdir dir="${build.dir}/WEB-INF/lib" />
 		<mkdir dir="${dist.dir}" />
 	</target>
-	
-	
+
+
 	<target name="compile" depends="init">
 		<echo>Compile the source files</echo>
 		<javac srcdir="${src.dir}" destdir="${build.dir}" debug="true">
 			<classpath refid="classpath" />
 		</javac>
 	</target>
-	
+
 	<target name="copy" depends="compile">
 		<copy todir="${build.dir}/${lib.dir}">
 			<fileset dir="${lib.dir}">
@@ -35,8 +35,8 @@
 			</fileset>
 		</copy>
 	</target>
-	
-	
+
+
 	<target name="jar" description="Create Jar file" depends="copy">
 			<echo>Building the war file</echo>
 		   	 <jar destfile="${project.name}/lib/${project.name}.jar">
