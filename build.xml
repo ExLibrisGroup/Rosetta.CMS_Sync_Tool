@@ -4,7 +4,7 @@
 	<property file="build.properties" />
 
 	<path id="classpath">
-		<fileset dir="${lib.dir}" includes="commons-io-2.1.jar, commons-lang-2.6.jar,commons-lang3.jar, commons-logging-1.1.1.jar,dom4j-1.6.1.jar ,dps-sdk-4.2.1.jar ,oracle12c-1.0.2.0.jar ,xmlbeans-2.6.0.jar" />
+		<fileset dir="${lib.dir}" includes="commons-io-2.1.jar, commons-lang-2.6.jar,commons-lang3.jar, commons-logging-1.1.1.jar,dom4j-1.6.1.jar ,dps-sdk-7.2.0.jar, oracle12c-1.0.2.0.jar ,xmlbeans-2.6.0.jar, log4j-core-2.17.1.jar, log4j-api-2.17.1.jar" />
 	</path>
 
 	<target name="clean">
@@ -47,7 +47,7 @@
 	<target name="deploy_local" depends="jar">
 		<echo>Deploying .jar to local Tomcat</echo>
 		<copy todir="${tomcat.dir}/${project.name}.jar">
-			<fileset dir="${project.name}.jar">
+			<fileset dir="${project.name}">
 			</fileset>
 		</copy>
 	</target>
