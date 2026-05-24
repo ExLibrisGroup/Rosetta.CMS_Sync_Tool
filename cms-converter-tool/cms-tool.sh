@@ -1,8 +1,9 @@
 #!/bin/sh
 
 
-NOW=$(date +"%m-%d-%Y-%r")
+NOW=$(date +"%m-%d-%Y-%T")
 project_dir=`pwd`
+mkdir -p ${project_dir}/logs/
 log_file="${project_dir}/logs/server.log${NOW}"
 echo "log file: ${log_file}"
 conf_dir="/exlibris/dps/d4_1/system.dir/conf/global.properties"
